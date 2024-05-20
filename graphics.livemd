@@ -1,0 +1,73 @@
+# Use the Graphic Api
+
+```elixir
+my_app_root = Path.join(__DIR__, "graphics")
+
+Mix.install(
+  [
+    {:graphics, path: my_app_root, env: :dev}
+  ],
+  # config_path: Path.join(my_app_root, "config/config.exs"),
+  lockfile: Path.join(my_app_root, "mix.lock")
+)
+```
+
+## Section
+
+```elixir
+square = ~S(<rect x="0" y="0" width="25" height="25" fill="green" />)
+```
+
+```elixir
+alias Graphics.SVG
+```
+
+```elixir
+SVG.new()
+|> SVG.add(square)
+|> SVG.render()
+```
+
+## Prototype
+
+* constructor: `new(x: 0, y: 0, width: 0, height: 0, fill: : green`
+* converter: `render(rect)`
+* combine: `def draw(opts), do: new(opts) > render()`
+
+```elixir
+defmodule Prototype.Rectangle do
+  defstruct x: 0, y: 0, width: 10, height: 10, fill: :black
+
+  def new(opts \\ []) do
+    __struct__(opts)
+  end
+
+  def render(rect) do
+    ~s("<rect x="#{rect.x}" y="#{rect.y}" width="#{rect.width}" height="#{rect.height}" fill="#{rect.fill}" />")
+  end
+
+  def draw(opts \\ []) do
+    opts
+    |> new()
+    |> render()
+  end
+end
+```
+
+## Usage from LiveBook
+
+```elixir
+SVG.new()
+|> SVG.add(Prototype.Rectangle.draw(x: 0, y: 0, width: 40, height: 40, fill: :purple))
+|> SVG.render()
+```
+
+## Usage from Mix Project
+
+```elixir
+alias Graphics.SVG.Rectangle
+
+SVG.new()
+|> SVG.add(Rectangle.draw(x: 0, y: 0, width: 40, height: 40, fill: :purple))
+|> SVG.render()
+```

@@ -1,0 +1,154 @@
+# Serpent
+
+```elixir
+my_app_root = Path.join(__DIR__, "graphics")
+
+Mix.install(
+  [
+    {:graphics, path: my_app_root, env: :dev}
+  ],
+  # config_path: Path.join(my_app_root, "config/config.exs"),
+  lockfile: Path.join(my_app_root, "mix.lock")
+)
+```
+
+## Game Module
+
+```elixir
+import IEx.Helpers
+```
+
+```elixir
+defmodule Game do
+  @segments [{10, 10}, {9, 10}, {8, 10}, {7, 10}, {6, 10}, {5, 10}]
+  defstruct serpent: @segments,
+            direction: :east,
+            apples: [{3, 3}]
+
+  def new(), do: %__MODULE__{}
+  def serpent_length(), do: Enum.count(@segments)
+
+  def move(%Game{direction: :east, serpent: [{x, y} | _]} = game),
+    do: move_to(game, {rem(x + 1, 20), y})
+
+  def move(%Game{direction: :west, serpent: [{x, y} | _]} = game),
+    do: move_to(game, {rem(x - 1, 20), y})
+
+  def move(%Game{direction: :north, serpent: [{x, y} | _]} = game),
+    do: move_to(game, {x, rem(y - 1, 20)})
+
+  def move(%Game{direction: :south, serpent: [{x, y} | _]} = game),
+    do: move_to(game, {x, rem(y + 1, 20)})
+
+  defp move_to(%Game{} = game, {x, y}) do
+    serpent =
+      [{x, y} | game.serpent]
+      |> Enum.take(serpent_length() - 1)
+
+    %Game{game | serpent: serpent}
+  end
+
+  @direction_turn_map %{
+    {:east, :left} => :north,
+    {:east, :right} => :south,
+    {:west, :left} => :south,
+    {:west, :right} => :north,
+    {:north, :left} => :west,
+    {:north, :right} => :east,
+    {:south, :left} => :east,
+    {:south, :right} => :west
+  }
+
+  def turn(%Game{direction: direction} = game, turn) do
+    new_direction = Map.get(@direction_turn_map, {direction, turn})
+    %Game{game | direction: new_direction}
+  end
+
+  # def turn(%Game{direction: :east} = game, :left), do: %Game{game | direction: :north}
+  # def turn(%Game{direction: :east} = game, :right), do: %Game{game | direction: :south}
+  # def turn(%Game{direction: :west} = game, :left), do: %Game{game | direction: :north}
+  # def turn(%Game{direction: :west} = game, :right), do: %Game{game | direction: :south}
+  # def turn(%Game{direction: :north} = game, :left), do: %Game{game | direction: :west}
+  # def turn(%Game{direction: :north} = game, :right), do: %Game{game | direction: :east}
+  # def turn(%Game{direction: :south} = game, :left), do: %Game{game | direction: :east}
+  # def turn(%Game{direction: :south} = game, :right), do: %Game{game | direction: :west}
+
+  def render(game, render_fn), do: render_fn.(%{apples: game.apples, segments: game.serpent})
+end
+```
+
+## User Interface API
+
+```elixir
+defmodule Renderer do
+  alias Graphics.SVG
+  alias Graphics.SVG.Rectangle
+
+  def draw(opts) do
+    SVG.new([], 200, 200)
+    |> add_rectangles(opts.apples, :red)
+    |> add_rectangles(opts.segments, :blue)
+    |> SVG.render()
+  end
+
+  def add_rectangles(svg, points, color) do
+    Enum.reduce(points, svg, fn {_x, _y} = point, acc ->
+      add_rectangle(acc, point, color)
+    end)
+  end
+
+  def add_rectangle(svg, {x, y}, color) do
+    SVG.add(
+      svg,
+      Rectangle.draw(x: (x - 1) * 10, y: (y - 1) * 10, width: 10, height: 10, fill: color)
+    )
+  end
+end
+```
+
+```elixir
+Renderer.draw(%{apples: [{1, 1}], segments: [{2, 2}, {2, 1}, {2, 3}, {2, 4}]})
+```
+
+```elixir
+Game.new()
+|> Game.move()
+|> Game.move()
+|> Game.move()
+|> Game.render(&Renderer.draw/1)
+```
+
+## Kino Animate
+
+```elixir
+keyboard = Kino.Control.keyboard([:keydown])
+Kino.Control.subscribe(keyboard, :keyboard)
+
+Kino.animate(1000, Game.new(), fn _event, game ->
+  next_game = Game.move(game) |> Game.turn(:right)
+  frame = Game.render(next_game, &Renderer.draw/1)
+  {:cont, frame, next_game}
+end)
+
+keyboard
+```
+
+```elixir
+Game.new()
+|> Game.turn(:right)
+|> Game.move()
+|> Game.render(&Renderer.draw/1)
+```
+
+```elixir
+keyboard = Kino.Control.keyboard([:keydown])
+Kino.Control.subscribe(keyboard, :keyboard)
+
+keyboard
+```
+
+```elixir
+Kino.Control.subscribe(keyboard, keyboard)
+Process.sleep(5000)
+IEx.Helpers.flush()
+```
