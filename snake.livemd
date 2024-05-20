@@ -23,10 +23,29 @@ defmodule Game do
   @segments [{10, 10}, {9, 10}, {8, 10}, {7, 10}, {6, 10}, {5, 10}]
   defstruct serpent: @segments,
             direction: :east,
-            apples: [{3, 3}]
+            apples: [{3, 3}],
+            turns: []
 
   def new(), do: %__MODULE__{}
-  def serpent_length(), do: Enum.count(@segments)
+
+  def tick(%Game{} = game) do
+    game
+    |> maybe_turn()
+    |> move()
+  end
+
+  defp maybe_turn(%Game{turns: []} = game), do: game
+
+  defp maybe_turn(%Game{turns: [next_turn | remaining_turns]} = game) do
+    next_game = %Game{game | turns: remaining_turns}
+    Game.turn(next_game, next_turn)
+  end
+
+  defp serpent_length(), do: Enum.count(@segments)
+
+  def add_turn(%Game{} = game, turn) do
+    %Game{game | turns: game.turns ++ [turn]}
+  end
 
   def move(%Game{direction: :east, serpent: [{x, y} | _]} = game),
     do: move_to(game, {rem(x + 1, 20), y})
@@ -163,15 +182,17 @@ Keyboardhandler.process()
 
 Create OTP game server with CRC
 
-* construct: `init` that takes a frame, create a game, render the game, start a timer to: `move
-  - reduce: handle_call` to `move` and a `handle_cast` to `turn`
-* convert: part of `handle_call` to `render` the game.
+* construct: `init` that takes a frame, create a game, render the game, start a timer to: `move`
+* reduce: `handle_call` to `move` and `handle_cast` to `turn`
+* convert: part of `handle_call` to `render` the `game`
 
 ```elixir
 defmodule Server do
   use GenServer
 
-  def init(frame) do
+  def init({frame, game_keyboard}) do
+    Kino.Control.subscribe(game_keyboard, :keyboard)
+
     game = Game.new()
     render(frame, game)
     :timer.send_interval(250, :game, :move)
@@ -184,22 +205,36 @@ defmodule Server do
   end
 
   def handle_info(:move, {frame, %Game{} = game}) do
-    next_game = Game.move(game)
+    next_game = Game.tick(game)
     render(frame, next_game)
     {:noreply, {frame, next_game}}
   end
 
-  def start_link(frame) do
-    GenServer.start(__MODULE__, frame, name: :game)
+  def handle_info({:keyboard, %{key: "ArrowRight"}}, {frame, %Game{} = game}) do
+    {:noreply, {frame, Game.add_turn(game, :right)}}
   end
 
-  def go() do
+  def handle_info({:keyboard, %{key: "ArrowLeft"}}, {frame, %Game{} = game}) do
+    {:noreply, {frame, Game.add_turn(game, :left)}}
+  end
+
+  def handle_info({:keyboard, _other_key}, {frame, %Game{} = game}) do
+    {:noreply, {frame, game}}
+  end
+
+  def start_link(frame, game_keyboard) do
+    GenServer.start(__MODULE__, {frame, game_keyboard}, name: :game)
+  end
+
+  def go(game_keyboard) do
     frame = Kino.Frame.new()
-    {:ok, _pid} = start_link(frame)
+    {:ok, _pid} = start_link(frame, game_keyboard)
     frame
   end
 end
 ```
+
+## Kill Server
 
 ```elixir
 :game
@@ -207,8 +242,14 @@ end
 |> Process.exit(:unscheduled)
 ```
 
+## Run Server
+
 ```elixir
-Server.go()
+keyboard = Kino.Control.keyboard([:keydown])
+```
+
+```elixir
+Server.go(keyboard)
 ```
 
 ```elixir
