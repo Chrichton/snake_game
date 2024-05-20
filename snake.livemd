@@ -48,30 +48,15 @@ defmodule Game do
     %Game{game | serpent: serpent}
   end
 
-  @direction_turn_map %{
-    {:east, :left} => :north,
-    {:east, :right} => :south,
-    {:west, :left} => :south,
-    {:west, :right} => :north,
-    {:north, :left} => :west,
-    {:north, :right} => :east,
-    {:south, :left} => :east,
-    {:south, :right} => :west
-  }
-
-  def turn(%Game{direction: direction} = game, turn) do
-    new_direction = Map.get(@direction_turn_map, {direction, turn})
-    %Game{game | direction: new_direction}
-  end
-
-  # def turn(%Game{direction: :east} = game, :left), do: %Game{game | direction: :north}
-  # def turn(%Game{direction: :east} = game, :right), do: %Game{game | direction: :south}
-  # def turn(%Game{direction: :west} = game, :left), do: %Game{game | direction: :north}
-  # def turn(%Game{direction: :west} = game, :right), do: %Game{game | direction: :south}
-  # def turn(%Game{direction: :north} = game, :left), do: %Game{game | direction: :west}
-  # def turn(%Game{direction: :north} = game, :right), do: %Game{game | direction: :east}
-  # def turn(%Game{direction: :south} = game, :left), do: %Game{game | direction: :east}
-  # def turn(%Game{direction: :south} = game, :right), do: %Game{game | direction: :west}
+  def turn(%Game{direction: :east} = game, :left), do: %Game{game | direction: :north}
+  def turn(%Game{direction: :east} = game, :right), do: %Game{game | direction: :south}
+  def turn(%Game{direction: :west} = game, :left), do: %Game{game | direction: :south}
+  def turn(%Game{direction: :west} = game, :right), do: %Game{game | direction: :north}
+  def turn(%Game{direction: :north} = game, :left), do: %Game{game | direction: :west}
+  def turn(%Game{direction: :north} = game, :right), do: %Game{game | direction: :east}
+  def turn(%Game{direction: :south} = game, :left), do: %Game{game | direction: :east}
+  def turn(%Game{direction: :south} = game, :right), do: %Game{game | direction: :west}
+  def turn(%Game{direction: :none} = game), do: game
 
   def render(game, render_fn), do: render_fn.(%{apples: game.apples, segments: game.serpent})
 end
@@ -125,6 +110,9 @@ keyboard = Kino.Control.keyboard([:keydown])
 Kino.Control.subscribe(keyboard, :keyboard)
 
 Kino.animate(1000, Game.new(), fn _event, game ->
+  # doesn´t work, because the keystroke must be received from a different process 
+  # keystroke = Keyboardhandler.process()
+
   next_game = Game.move(game) |> Game.turn(:right)
   frame = Game.render(next_game, &Renderer.draw/1)
   {:cont, frame, next_game}
@@ -141,6 +129,19 @@ Game.new()
 ```
 
 ```elixir
+defmodule Keyboardhandler do
+  def process() do
+    receive do
+      {:keyboard, %{key: "ArrowLeft"}} -> :left
+      {:keyboard, %{key: "ArrowRight"}} -> :right
+    after
+      1 -> :none
+    end
+  end
+end
+```
+
+```elixir
 keyboard = Kino.Control.keyboard([:keydown])
 Kino.Control.subscribe(keyboard, :keyboard)
 
@@ -149,6 +150,6 @@ keyboard
 
 ```elixir
 Kino.Control.subscribe(keyboard, keyboard)
-Process.sleep(5000)
-IEx.Helpers.flush()
+
+Keyboardhandler.process()
 ```
