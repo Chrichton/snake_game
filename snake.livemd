@@ -128,6 +128,8 @@ Game.new()
 |> Game.render(&Renderer.draw/1)
 ```
 
+## Keyboard Prototype
+
 ```elixir
 defmodule Keyboardhandler do
   def process() do
@@ -152,4 +154,48 @@ keyboard
 Kino.Control.subscribe(keyboard, keyboard)
 
 Keyboardhandler.process()
+```
+
+## OTP Server
+
+Create OTP game server with CRC
+
+* construct: `init` that takes a frame, create a game, render the game, start a timer to: `move
+  - reduce: handle_call` to `move` and a `handle_cast` to `turn`
+* convert: part of `handle_call` to `render` the game.
+
+```elixir
+defmodule Server do
+  use GenServer
+
+  def init(frame) do
+    game = Game.new()
+    render(frame, game)
+    :timer.send_interval(250, self(), :move)
+    {:ok, {frame, game}}
+  end
+
+  def render(frame, %Game{} = game) do
+    svg = Game.render(game, &Renderer.draw/1)
+    Kino.Frame.render(frame, svg)
+  end
+
+  def start_link(frame) do
+    GenServer.start(__MODULE__, frame)
+  end
+
+  def go() do
+    frame = Kino.Frame.new()
+    {:ok, _pid} = start_link(frame)
+    frame
+  end
+end
+```
+
+```elixir
+Server.go()
+```
+
+```elixir
+
 ```
