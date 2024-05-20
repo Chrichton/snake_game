@@ -109,11 +109,14 @@ Game.new()
 keyboard = Kino.Control.keyboard([:keydown])
 Kino.Control.subscribe(keyboard, :keyboard)
 
-Kino.animate(1000, Game.new(), fn _event, game ->
+Kino.animate(500, Game.new(), fn _event, game ->
   # doesn´t work, because the keystroke must be received from a different process 
   # keystroke = Keyboardhandler.process()
 
-  next_game = Game.move(game) |> Game.turn(:right)
+  next_game =
+    Game.move(game)
+    |> Game.turn(:right)
+
   frame = Game.render(next_game, &Renderer.draw/1)
   {:cont, frame, next_game}
 end)
@@ -171,7 +174,7 @@ defmodule Server do
   def init(frame) do
     game = Game.new()
     render(frame, game)
-    :timer.send_interval(250, self(), :move)
+    :timer.send_interval(250, :game, :move)
     {:ok, {frame, game}}
   end
 
@@ -180,8 +183,14 @@ defmodule Server do
     Kino.Frame.render(frame, svg)
   end
 
+  def handle_info(:move, {frame, %Game{} = game}) do
+    next_game = Game.move(game)
+    render(frame, next_game)
+    {:noreply, {frame, next_game}}
+  end
+
   def start_link(frame) do
-    GenServer.start(__MODULE__, frame)
+    GenServer.start(__MODULE__, frame, name: :game)
   end
 
   def go() do
@@ -190,6 +199,12 @@ defmodule Server do
     frame
   end
 end
+```
+
+```elixir
+:game
+|> GenServer.whereis()
+|> Process.exit(:unscheduled)
 ```
 
 ```elixir
