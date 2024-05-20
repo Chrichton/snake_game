@@ -50,11 +50,23 @@ defmodule Game do
   def move(%Game{direction: :east, serpent: [{x, y} | _]} = game),
     do: move_to(game, {rem(x + 1, 20), y})
 
-  def move(%Game{direction: :west, serpent: [{x, y} | _]} = game),
-    do: move_to(game, {rem(x - 1, 20), y})
+  def move(%Game{direction: :west, serpent: [{x, y} | _]} = game) do
+    x =
+      if x < 0,
+        do: 20,
+        else: x - 1
 
-  def move(%Game{direction: :north, serpent: [{x, y} | _]} = game),
-    do: move_to(game, {x, rem(y - 1, 20)})
+    move_to(game, {x, y})
+  end
+
+  def move(%Game{direction: :north, serpent: [{x, y} | _]} = game) do
+    y =
+      if y < 0,
+        do: 20,
+        else: y - 1
+
+    move_to(game, {x, y})
+  end
 
   def move(%Game{direction: :south, serpent: [{x, y} | _]} = game),
     do: move_to(game, {x, rem(y + 1, 20)})
@@ -129,7 +141,7 @@ keyboard = Kino.Control.keyboard([:keydown])
 Kino.Control.subscribe(keyboard, :keyboard)
 
 Kino.animate(500, Game.new(), fn _event, game ->
-  # doesn´t work, because the keystroke must be received from a different process 
+  # doesn´t work, because the keystroke must be received from a different process
   # keystroke = Keyboardhandler.process()
 
   next_game =
@@ -182,9 +194,9 @@ Keyboardhandler.process()
 
 Create OTP game server with CRC
 
-* construct: `init` that takes a frame, create a game, render the game, start a timer to: `move`
-* reduce: `handle_call` to `move` and `handle_cast` to `turn`
-* convert: part of `handle_call` to `render` the `game`
+- construct: `init` that takes a frame, create a game, render the game, start a timer to: `move`
+- reduce: `handle_call` to `move` and `handle_cast` to `turn`
+- convert: part of `handle_call` to `render` the `game`
 
 ```elixir
 defmodule Server do
