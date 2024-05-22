@@ -26,12 +26,36 @@ defmodule Game do
             apples: [{3, 3}],
             turns: []
 
-  def new(), do: %__MODULE__{}
+  def new(), do: %__MODULE__{} |> set_random_apple()
 
   def tick(%Game{} = game) do
     game
     |> maybe_turn()
     |> move()
+    |> maybe_eat_apple()
+  end
+
+  def set_random_apple(%Game{serpent: serpent} = game) do
+    random_apple =
+      Stream.repeatedly(fn -> {:rand.uniform(20), :rand.uniform(20)} end)
+      |> Stream.drop_while(fn {_x, _y} = segment -> segment in serpent end)
+      |> Enum.take(1)
+      |> hd()
+
+    %Game{game | apples: [random_apple]}
+  end
+
+  defp maybe_eat_apple(%Game{serpent: serpent, apples: apples} = game) do
+    apple_to_eat = Enum.filter(apples, &(&1 == hd(serpent)))
+
+    if apple_to_eat == [] do
+      game
+    else
+      remaining_apples = Enum.reject(apples, &(&1 == apple_to_eat))
+
+      %Game{game | apples: remaining_apples}
+      |> Game.set_random_apple()
+    end
   end
 
   defp maybe_turn(%Game{turns: []} = game), do: game
@@ -264,6 +288,19 @@ keyboard = Kino.Control.keyboard([:keydown])
 Server.go(keyboard)
 ```
 
-```elixir
+## Experiment with a random apple
 
+```elixir
+random_apple = fn -> {:random.uniform(20), :random.uniform(20)} end
+```
+
+```elixir
+serpent = for x <- 1..19, y <- 1..20, do: {x, y}
+```
+
+```elixir
+Stream.repeatedly(fn -> {:rand.uniform(20), :rand.uniform(20)} end)
+|> Stream.drop_while(fn {_x, _y} = segment -> segment in serpent end)
+|> Enum.take(1)
+|> hd()
 ```
