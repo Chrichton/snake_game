@@ -265,6 +265,9 @@ defmodule Server do
   def go(game_keyboard) do
     frame = Kino.Frame.new()
     {:ok, _pid} = start_link(frame, game_keyboard)
+
+    # doesn´t work -> nothing there
+    # Kino.start_child({__MODULE__, {frame, game_keyboard}})
     frame
   end
 end
