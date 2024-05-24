@@ -77,7 +77,7 @@ defmodule Game do
   def move(%Game{direction: :west, serpent: [{x, y} | _]} = game) do
     x =
       if x < 0,
-        do: 20,
+        do: 19,
         else: x - 1
 
     move_to(game, {x, y})
@@ -86,7 +86,7 @@ defmodule Game do
   def move(%Game{direction: :north, serpent: [{x, y} | _]} = game) do
     y =
       if y < 0,
-        do: 20,
+        do: 19,
         else: y - 1
 
     move_to(game, {x, y})
@@ -120,6 +120,20 @@ end
 ## User Interface API
 
 ```elixir
+alias Graphics.SVG
+alias Graphics.SVG.Rectangle
+
+border_horizontal_coords = for x <- 0..199, y <- [0, 199], do: {x, y}
+border_vertical_coords = for x <- [0, 199], y <- 0..199, do: {x, y}
+border_coords = border_horizontal_coords ++ border_vertical_coords
+
+Enum.reduce(border_coords, SVG.new([], 200, 200), fn {x, y}, svg ->
+  SVG.add(svg, Rectangle.draw(x: x, y: y, width: 1, height: 1))
+end)
+|> SVG.render()
+```
+
+```elixir
 defmodule Renderer do
   alias Graphics.SVG
   alias Graphics.SVG.Rectangle
@@ -128,6 +142,7 @@ defmodule Renderer do
     SVG.new([], 200, 200)
     |> add_rectangles(opts.apples, :red)
     |> add_rectangles(opts.segments, :blue)
+    |> add_border(:black)
     |> SVG.render()
   end
 
@@ -142,6 +157,16 @@ defmodule Renderer do
       svg,
       Rectangle.draw(x: (x - 1) * 10, y: (y - 1) * 10, width: 10, height: 10, fill: color)
     )
+  end
+
+  def add_border(svg, color) do
+    border_horizontal_coords = for x <- 0..199, y <- [0, 199], do: {x, y}
+    border_vertical_coords = for x <- [0, 199], y <- 0..199, do: {x, y}
+    border_coords = border_horizontal_coords ++ border_vertical_coords
+
+    Enum.reduce(border_coords, svg, fn {x, y}, acc ->
+      SVG.add(acc, Rectangle.draw(x: x, y: y, width: 1, height: 1, fill: color))
+    end)
   end
 end
 ```
