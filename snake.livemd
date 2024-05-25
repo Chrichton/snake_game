@@ -75,21 +75,21 @@ defmodule Game do
     do: move_to(game, {rem(x + 1, 20), y})
 
   def move(%Game{direction: :west, serpent: [{x, y} | _]} = game) do
-    x =
+    x_to =
       if x == 0,
         do: 19,
         else: x - 1
 
-    move_to(game, {x, y})
+    move_to(game, {x_to, y})
   end
 
   def move(%Game{direction: :north, serpent: [{x, y} | _]} = game) do
-    y =
+    y_to =
       if y == 0,
         do: 19,
         else: y - 1
 
-    move_to(game, {x, y})
+    move_to(game, {x, y_to})
   end
 
   def move(%Game{direction: :south, serpent: [{x, y} | _]} = game),
