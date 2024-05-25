@@ -76,7 +76,7 @@ defmodule Game do
 
   def move(%Game{direction: :west, serpent: [{x, y} | _]} = game) do
     x =
-      if x < 0,
+      if x == 0,
         do: 19,
         else: x - 1
 
@@ -85,7 +85,7 @@ defmodule Game do
 
   def move(%Game{direction: :north, serpent: [{x, y} | _]} = game) do
     y =
-      if y < 0,
+      if y == 0,
         do: 19,
         else: y - 1
 
@@ -155,7 +155,7 @@ defmodule Renderer do
   def add_rectangle(svg, {x, y}, color) do
     SVG.add(
       svg,
-      Rectangle.draw(x: (x - 1) * 10, y: (y - 1) * 10, width: 10, height: 10, fill: color)
+      Rectangle.draw(x: x * 10, y: y * 10, width: 10, height: 10, fill: color)
     )
   end
 
