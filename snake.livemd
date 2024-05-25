@@ -283,16 +283,14 @@ defmodule Server do
     {:noreply, {frame, game}}
   end
 
-  def start_link(frame, game_keyboard) do
+  def start_link({frame, game_keyboard}) do
     GenServer.start(__MODULE__, {frame, game_keyboard}, name: :game)
   end
 
   def go(game_keyboard) do
     frame = Kino.Frame.new()
-    {:ok, _pid} = start_link(frame, game_keyboard)
 
-    # doesn´t work -> nothing there
-    # Kino.start_child({__MODULE__, {frame, game_keyboard}})
+    Kino.start_child!({__MODULE__, {frame, game_keyboard}})
     frame
   end
 end
