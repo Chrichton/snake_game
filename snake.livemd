@@ -37,7 +37,7 @@ defmodule Game do
 
   def set_random_apple(%Game{serpent: serpent} = game) do
     random_apple =
-      Stream.repeatedly(fn -> {:rand.uniform(20), :rand.uniform(20)} end)
+      Stream.repeatedly(fn -> {Enum.random(0..19), Enum.random(0..19)} end)
       |> Stream.drop_while(fn {_x, _y} = segment -> segment in serpent end)
       |> Enum.take(1)
       |> hd()
