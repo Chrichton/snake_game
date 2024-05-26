@@ -55,8 +55,36 @@ defmodule Game do
 
       %Game{game | apples: remaining_apples}
       |> Game.set_random_apple()
+      |> Game.extend_serpent()
     end
   end
+
+  def extend_serpent(%Game{serpent: serpent} = game) do
+    tail_direction = tail_direction(serpent)
+    extend_position = extend_position(List.last(serpent), tail_direction)
+    new_serpent = List.insert_at(serpent, -1, extend_position)
+    %Game{game | serpent: new_serpent}
+  end
+
+  def tail_direction(serpent) do
+    [{x_before_last, y_before_last}, {x_last, y_last}] =
+      Enum.drop(serpent, Enum.count(serpent) - 2)
+
+    if x_before_last == x_last do
+      if y_before_last > y_last,
+        do: :north,
+        else: :south
+    else
+      if x_before_last > x_last,
+        do: :east,
+        else: :west
+    end
+  end
+
+  def extend_position({x, y} = _tail, :west), do: {x + 1, y}
+  def extend_position({x, y} = _tail, :east), do: {x - 1, y}
+  def extend_position({x, y} = _tail, :north), do: {x, y + 1}
+  def extend_position({x, y} = _tail, :south), do: {x, y - 1}
 
   defp maybe_turn(%Game{turns: []} = game), do: game
 
@@ -177,9 +205,11 @@ Renderer.draw(%{apples: [{1, 1}], segments: [{2, 2}, {2, 1}, {2, 3}, {2, 4}]})
 
 ```elixir
 Game.new()
+|> Game.turn(:left)
 |> Game.move()
-|> Game.move()
-|> Game.move()
+|> Game.extend_serpent()
+|> Game.extend_serpent()
+|> Game.extend_serpent()
 |> Game.render(&Renderer.draw/1)
 ```
 
@@ -296,14 +326,6 @@ defmodule Server do
 end
 ```
 
-## Kill Server
-
-```elixir
-:game
-|> GenServer.whereis()
-|> Process.exit(:unscheduled)
-```
-
 ## Run Server
 
 ```elixir
@@ -312,6 +334,14 @@ keyboard = Kino.Control.keyboard([:keydown])
 
 ```elixir
 Server.go(keyboard)
+```
+
+## Kill Server
+
+```elixir
+:game
+|> GenServer.whereis()
+|> Process.exit(:unscheduled)
 ```
 
 ## Experiment with a random apple
